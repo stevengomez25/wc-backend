@@ -12,9 +12,9 @@ const generateToken = (res, userId) => {
   // Use cookie name `token` (auth middleware expects `req.cookies.token`)
   res.cookie("token", token, {
     httpOnly: true,
-    secure: false,
-    sameSite: "lax",
-    maxAge: 7 * 24 * 60 * 60 * 1000,
+    secure: true,            // Obliga a usar HTTPS (Necesario en Render)
+    sameSite: 'None',        // Permite el envío de la cookie en peticiones cross-site
+    maxAge: 3600000 * 24
   });
 };
 
