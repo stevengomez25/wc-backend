@@ -100,39 +100,83 @@ export const getProduct = async (req, res) => {
 
 
 // Update
+/* Función auxiliar para calcular el stock total sumando las quantities de las variantes.
+ * @param {Array} variants - Array de objetos variante.
+ * @returns {number} El stock total.
+ */
+const calculateTotalStock = (variants) => {
+    if (!variants || variants.length === 0) return 0;
+    // Usamos || 0 para manejar posibles cantidades indefinidas o nulas con seguridad
+    return variants.reduce((total, variant) => total + (variant.quantity || 0), 0);
+};
+
+
 export const updateProduct = async (req, res) => {
-  try {
-    // 1. Encontrar el producto y verificar que existe
-    const productToUpdate = await Product.findById(req.params.id);
+    try {
+        const productId = req.params.id;
+        let productData = req.body; // Los datos recibidos del frontend
 
-    if (!productToUpdate) {
-      return res.status(404).json({ ok: false, message: "Product not found" });
+        // 1. Verificar existencia y propiedad
+        const productToUpdate = await Product.findById(productId, { createdBy: 1 }); // Solo necesitamos el ID del creador
+
+        if (!productToUpdate) {
+            return res.status(404).json({ ok: false, message: "Product not found" });
+        }
+
+        // 2. VERIFICAR PROPIEDAD
+        if (productToUpdate.createdBy.toString() !== req.user._id.toString()) {
+            return res.status(403).json({ 
+                ok: false, 
+                message: "Not authorized to update this product" 
+            });
+        }
+
+        // 3. 🎯 Pre-procesamiento: Recalcular el Stock Total
+        if (productData.variants) {
+            // Recalcula el stock total y lo agrega a los datos que se van a actualizar
+            productData.stock = calculateTotalStock(productData.variants);
+        }
+
+        // 4. Realizar la actualización
+        // Usamos findByIdAndUpdate para actualizar el documento en la base de datos
+        const updatedProduct = await Product.findByIdAndUpdate(
+            productId,
+            productData, // Incluye los nuevos 'variants' y el 'stock' calculado
+            // { new: true } devuelve el documento actualizado
+            // { runValidators: true } asegura que Mongoose ejecute validaciones (required, unique, min)
+            { new: true, runValidators: true, context: 'query' } 
+        );
+
+        // 5. Respuesta Exitosa
+        res.json({ ok: true, product: updatedProduct });
+
+    } catch (error) {
+        // 6. Manejo Centralizado de Errores
+
+        // Manejar error de unicidad (código 11000 de MongoDB)
+        if (error.code === 11000) {
+            return res.status(400).json({ 
+                ok: false, 
+                message: "Validation Error: Product code or Variant SKU must be unique." 
+            });
+        }
+        
+        // Manejar errores de validación (por ejemplo, campo requerido o min/max)
+        if (error.name === 'ValidationError') {
+             // Mongoose validation errors
+             return res.status(400).json({
+                ok: false,
+                message: `Validation Error: ${error.message}`,
+             });
+        }
+
+        // Manejar cualquier otro error del servidor
+        console.error("Server Error during product update:", error);
+        return res.status(500).json({ 
+            ok: false, 
+            message: "Internal Server Error during product update." 
+        });
     }
-
-    // 2. VERIFICAR PROPIEDAD: Asegúrate de que el usuario logueado (req.user._id)
-    //    sea el mismo que creó el producto (productToUpdate.createdBy)
-    if (productToUpdate.createdBy.toString() !== req.user._id.toString()) {
-      // Nota: Debes usar .toString() porque uno es un objeto (ObjectID) y el otro es una cadena.
-      return res.status(403).json({ 
-        ok: false, 
-        message: "Not authorized to update this product" 
-      });
-    }
-
-    // 3. Si la propiedad es correcta, realiza la actualización
-    // (Opcional: puedes agregar el campo 'updatedAt' y 'updatedBy' al req.body antes de la actualización)
-    const updatedProduct = await Product.findByIdAndUpdate(
-      req.params.id,
-      req.body,
-      { new: true, runValidators: true } // { new: true } devuelve el actualizado
-    );
-
-    res.json({ ok: true, product: updatedProduct });
-
-  } catch (error) {
-    // Manejar errores de validación de Mongoose o de servidor
-    res.status(500).json({ ok: false, message: error.message });
-  }
 };
 
 // Delete

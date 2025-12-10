@@ -13,7 +13,7 @@ const generateToken = (res, userId) => {
   res.cookie("token", token, {
     httpOnly: true,
     secure: true,            // Obliga a usar HTTPS (Necesario en Render)
-    sameSite: 'None',        // Permite el envío de la cookie en peticiones cross-site
+    sameSite: 'none',        // Permite el envío de la cookie en peticiones cross-site
     maxAge: 3600000 * 24
   });
 };

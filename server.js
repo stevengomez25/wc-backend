@@ -6,6 +6,7 @@ import morgan from "morgan";
 import authRoutes from "./routes/authRoutes.js";
 import connectDB from "./config/db.js";
 import productRoutes from "./routes/productRoutes.js";
+import orderRoutes from "./routes/orderRoutes.js";
 
 
 
@@ -16,7 +17,7 @@ const app = express();
 // Middleware
 app.use(express.json());
 app.use(cors({
-  origin: "https://faccstore.netlify.app",
+  origin: "https://wc-backend-7te7.onrender.com",
   credentials: true
 }));
 app.use(cookieParser());
@@ -25,7 +26,7 @@ app.use(morgan("dev"));
 
 app.use("/api/auth", authRoutes);
 app.use("/api/products", productRoutes);
-
+app.use("/api/orders", orderRoutes);
 
 
 // Basic route
