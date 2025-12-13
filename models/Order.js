@@ -18,7 +18,6 @@ const OrderItemSchema = new mongoose.Schema(
         },
         // Información básica del producto en el momento de la compra
         name: { type: String, required: true },
-        productCode: { type: String, required: true }, // Código del producto
         image: { type: String },
         
         // Detalles de la Variante Seleccionada
