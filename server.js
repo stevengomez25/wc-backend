@@ -17,7 +17,7 @@ const app = express();
 // Middleware
 app.use(express.json());
 app.use(cors({
-  origin: "hhttps://faccstore.netlify.app",
+  origin: "https://faccstore.netlify.app",
   credentials: true
 }));
 app.use(cookieParser());
